@@ -5,18 +5,18 @@ import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.widget.Toast
 import com.anychart.AnyChart
 import com.anychart.AnyChartView
 import com.anychart.chart.common.dataentry.DataEntry
 import com.anychart.chart.common.dataentry.ValueDataEntry
 import com.anychart.data.Set
-import com.anychart.data.View
 import com.anychart.enums.Anchor
 import com.anychart.enums.MarkerType
-import com.pdg.priceindex.R.id.lastPriceBTC
 import com.pdg.priceindex.model.History
 import com.pdg.priceindex.model.TickerValue
 import com.pdg.priceindex.utils.Constants
+import com.pdg.priceindex.utils.NetworkManager
 import com.pdg.priceindex.viewmodel.MainViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
@@ -33,25 +33,42 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        //observe LiveData from viewModel for last price and ask price
-        val mainViewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
+        if(!NetworkManager.hasNetworkAccess(this)){
+            Toast.makeText(this, "⚠️ Looks like you are not connected to the internet!", Toast.LENGTH_LONG).show()
+        }else {
 
-        //setup data calls
-        mainViewModel.tikrValues.observe(this, Observer<TickerValue> { trk->
-            Log.i(Constants.TAG,"ℹ️ $trk")
-            lastPriceBTC.text = "${trk?.last}€"
-            askPriceBTC.text = "${trk?.ask}€"
-            timeStampTV.text = "${trk?.display_timestamp}"
-        })
+            //observe LiveData from viewModel for last price and ask price
+            val mainViewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
-        mainViewModel.historyValues.observe(this, Observer<List<History>> { hist->
-            data.clear()
-            for(h in hist!!.iterator()){
-                data.add(ValueDataEntry(h.time,h.average))
-            }
-            //show historical data on the chart
-            setupChart()
-        })
+            //setup data calls
+            mainViewModel.tikrValues.observe(this, Observer<TickerValue> { trk ->
+                if (trk != null) {
+                    Log.i(Constants.TAG, "ℹ️ $trk")
+                    lastPriceBTC.text = "${trk?.last}€"
+                    askPriceBTC.text = "${trk?.ask}€"
+                    timeStampTV.text = "${trk?.display_timestamp}"
+                } else {
+                    Toast.makeText(this, "Could not get ticker data.", Toast.LENGTH_LONG).show()
+                }
+
+            })
+
+            mainViewModel.historyValues.observe(this, Observer<List<History>> { hist ->
+
+                if (hist != null) {
+                    data.clear()
+                    for (h in hist!!.iterator()) {
+                        data.add(ValueDataEntry(h.time, h.average))
+                    }
+                    //show historical data on the chart
+                    setupChart()
+                } else {
+                    progressBar.visibility = android.view.View.GONE
+                    Toast.makeText(this, "Could not get historical data.", Toast.LENGTH_LONG).show()
+                }
+
+            })
+        }
     }
 
     private fun setupChart() {

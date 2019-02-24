@@ -32,6 +32,9 @@ class MainViewModel : ViewModel() {
                 if(response.isSuccessful){
                     Log.i(Constants.TAG, "➡️ ${response.body()}")
                     historyValues.value = response.body()
+                }else {
+                    Log.e(Constants.TAG,"❌(HISTORY) SOMETHING WENT WRONG. ${response.code()}")
+                    historyValues.value = null
                 }
             }
 
@@ -52,6 +55,9 @@ class MainViewModel : ViewModel() {
                 if(response.isSuccessful){
                     Log.i(Constants.TAG, "➡️ ${response.body()}")
                     tikrValues.value = response.body()
+                }else {
+                    Log.e(Constants.TAG,"❌(TICKER) SOMETHING WENT WRONG. ${response.code()}")
+                    tikrValues.value = null
                 }
             }
 
